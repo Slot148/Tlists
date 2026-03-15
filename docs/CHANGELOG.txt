@@ -1,0 +1,24 @@
+1.0.0
+
+1.1.0
+- add
+    - general
+        - nova macro para captura de erros
+        
+    - list
+        - adicionado o campo to string
+        - adicionado o capo clear function
+
+- changed
+    - general
+        - nomes das funções padronizados e simplificados
+
+    - list
+        - print faz callback da função definida no campo to string
+        - free list faz callback da função definida no campo clear function
+        - funcionamento da função foreach ajustada
+        
+
+- removed
+    - list
+        -

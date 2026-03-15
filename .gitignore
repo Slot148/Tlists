@@ -11,3 +11,5 @@ TODO.txt
 main.c
 CMakeLists(teste).txt
 LICENSE
+.*/*
+makefile

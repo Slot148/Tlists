@@ -155,7 +155,7 @@ void* array_get(ArrayList list, int index){
     return list->_array[index];
 }
 
-void array_push_back(ArrayList list, ...){
+void array_push(ArrayList list, ...){
     if (list == NULL) {
         fprintf(stderr, "Error in array_push_back(): The provided list instance is NULL.\n");
         return;
@@ -266,4 +266,14 @@ ArrayList array_duplicate(ArrayList list){
         }
     }
     return new;
+}
+
+void array_foreach(ArrayList list, void(*function)(void*)){
+    if(list == NULL){
+        fprintf(stderr, "Error in array_clone(): The provided list instance is NULL.\n");
+        return;
+    }
+    for(int i = 0; i < list->_length; i++){
+        function(array_get(list, (int)i));
+    }
 }

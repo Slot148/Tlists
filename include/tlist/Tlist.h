@@ -13,10 +13,15 @@ typedef enum Type{
     DOUBLE
 } Type;
 
-typedef struct List *List;
-typedef struct ArrayList *ArrayList;
-typedef struct Node *Node;
+typedef struct List* List;
+typedef struct ArrayList* ArrayList;
+typedef struct Node* Node;
+typedef struct TNode* TNode;
+typedef struct Tree* Tree;
 typedef struct TIterator* TIterator;
+
+typedef int (*Condition) (void*, void*);
+typedef void (*Callback)(void*);
 
 //linked list
 List new_list(Type type);
@@ -45,7 +50,8 @@ void* array_get(ArrayList list, int index);
 void array_set(ArrayList list, int index, ...);
 void array_clear(ArrayList list);
 void array_resize(ArrayList list, int new_size);
-void array_push_back(ArrayList list, ...);
+void array_push(ArrayList list, ...);
+void array_foreach(ArrayList list, void(*function)(void*));
 void array_set_toString(ArrayList list, void(*function)(void*));
 void array_set_clearFunction(ArrayList list, void(*function)(void*));
 
@@ -56,4 +62,10 @@ void* iterator_next(TIterator iterator);
 bool iterator_has_next(TIterator iterator);
 void iterator_free(TIterator iterator);
 
+//binary tree
+Tree new_tree(Type type);
+void tree_push(Tree tree, ...);
+void set_checkCondition(Tree tree, int (*condition)(void*, void*));
+
+//hashmap
 #endif

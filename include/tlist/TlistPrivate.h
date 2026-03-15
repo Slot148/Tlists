@@ -15,6 +15,12 @@ struct Node{
     Node _nextNode;  
 };
 
+struct TNode{
+    void* _value;
+    TNode _left;
+    TNode _right;
+};
+
 struct TIterator{
     Node _current;   
     List _list;      
@@ -31,6 +37,16 @@ struct List{
     void(*clear_function)(void*);
 };
 
+struct Tree{
+    TNode _root;
+    Type _type;
+    size_t _size;
+    int _length;
+    int(*condition)(void*, void*);
+    void(*to_string)(void*);
+    void(*clear_function)(void*);
+};
+
 struct ArrayList{
     void** _array;
     int _capacity;
@@ -43,7 +59,9 @@ struct ArrayList{
 
 /** @private */
 Node _new_node(void *val, size_t size, Type type);
+TNode _new_tnode(void* val, Type type, size_t size);
 void _under_push(List this, Node node);
+void _under_tpush(Tree tree, TNode new_node);
 void _under_insert(List this, int index, Node node);
 void* _clone_value(Node node, Type type);
 void _catch_status(Status status_code, const char* message, const char* file, int line, const char* function);
