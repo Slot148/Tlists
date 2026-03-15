@@ -13,7 +13,7 @@ Esta Biblioteca fornece estruturas de listas e arrays flexiveis que podem armaze
 - [Uso Rápido](#uso-rápido)
     - [Gerenciamento de Memória](#gerenciamento-de-memóriaimportante)
     - [Exemplos](#exemplo)
-- [Licença](./LICENSE)
+- [Licença](#licenca)
 - [Contatos]()
 
 ## Funcionalidades
