@@ -8,54 +8,25 @@ Esta Biblioteca fornece estruturas de listas e arrays flexiveis que podem armaze
 
 ### Indice
 - [Funcionalidades](#funcionalidades)
-- [Requisitos]()
-- [Instalação]()
-- [Compilação]()
-- [Uso Rápido]()
+- [Requisitos](#requisitos)
+- [Instalação](#instalação)
+- [Uso Rápido](#uso-rápido)
     - [Gerenciamento de Memória](#gerenciamento-de-memóriaimportante)
-    - [Exemplos]()
-- [Documentação(Doxygen)](#documentacao)
-- [Licença]()
+    - [Exemplos](#exemplo)
+- [Licença](./LICENSE)
 - [Contatos]()
 
 ## Funcionalidades
 - Tipagem dinâmica: listas/arrays para `int`, `float`, `double`, `char*` e ponteiros genéricos(`void*`/`T`).
-- Gerenciamento de memória para tipos primitivos e strings(valores copiados)
-- Operações suportadas:
-    - Listas Encadeadas:
-        - `new_list`: cria uma nova lista vazia.
-        - `list_print`: imprime os elementos da lista.
-        - `list_length`: retorna a quantidade de elementos da lista.
-        - `list_free`: libera a memória alocada pela lista.
-        - `list_push`: adiciona o elemento ao final da lista.
-        - `list_pop`: remove e retorna o primeiro elemento da lista.
-        - `list_get`: retorna um ponteiro para uma cópia do elemento na posição especificada.
-        - `list_set`: define o elemento na posição especificada.
-        - `list_delete`: remove o elemento na posição especificada.
-        - `list_insert`: insere um elemento na posição especificada.
-        - `list_pick`: remove e retorna o elemento na posição especificada.
-        - `list_foreach`: executa uma função para cada elemento da lista.
-    - Arrays Dinâmicos:
-        - `new_array`: cria um novo array vazio.
-        - `array_clone`: cria uma cópia do array.
-        - `array_print`: imprime os elementos do array.
-        - `array_length`: retorna a quantidade de elementos do array.
-        - `array_free`: libera a memória alocada pelo array.
-        - `array_get`: retorna um ponteiro para o elemento na posição especificada.
-        - `array_set`: define o elemento na posição especificada.
-        - `array_clear`: remove todos os elementos do array e define como NULL.
-        - `array_resize`: altera o tamanho do array.
-        - `array_push_back`: adiciona o elemento ao final do array.
-        - `array_toString`: define a função de callback com a formatção da string a ser retornada.
-        - `array_clearFunctio`: Define a função usada para liberar a memória utilizada por tipos personalizados.
+- Gerenciamento de memória para tipos primitivos e strings(valores copiados).
+- Fácil gerenciamento de memória através de callbacks para tipos personalizados.
 
 ## Requisitos
 - CMake
 - Compilador C(POSIX)
 - (Opcional) Doxygen para gerar documentação da API.
-- (Opcional - Apenas MinGW) VCPKG para fácil instalação no windows.
 
-## Compilação
+## Instalação
 1. Clone o repositório do projeto
 
     ```bash
@@ -75,7 +46,6 @@ Esta Biblioteca fornece estruturas de listas e arrays flexiveis que podem armaze
         ```bash
         gcc meu_arquivo.c -Iinclude -Llib -ltlist -o meu_programa
         ```
-        Observação: Caso instalado via vcpkg verifique [VCPKG]().
 
 ## Uso Rápido
 1. Inclua o header:
@@ -100,6 +70,91 @@ Esta Biblioteca fornece estruturas de listas e arrays flexiveis que podem armaze
 
 ## Gerenciamento de Memória(Importante)
 
+É essencial estar atento a objetos proprios adicionados a lista, ela ja abstrai muito do gerenciamento impossibilitando liberar os ponteiros da lista sem que fornela uma função de callback que faça a limpeza de cada objeto.
+
+1. Sempre use a função apropriada para liberar a lista:
+    ```c
+    List list = new_list();
+    list_free(list);
+    ```
+    Ela garante que a memoria seja liberada corretamente de acordo com o tipo fornecido.
+    Evite usar `free()` fornecido pela `<stdlib.h>`.
+
+2. Sempre que usar tipos personalizados forneça um callback:
+    ```c
+    list_set_clearFunction(list, function_callback);
+    ```
+    Ela garante que a função de limpeza funcione corretamente para tipos personalizados, na verdade ela sequer funcionará caso não forneça a função. Contudo, mantenha a atenção a variedade de tipos inseridos na lista, ela não espera encontrar dois tipos diferentes de dado, mas se optar por fazer, garanta que a callback consiga lidar com todo dado que encontrar.
+
+3. A lista não guarda valores, apenas ponteiros, então é importante se atentar ao ciclo de vida de um dado, de preferência a dados alocados ao heap para evitar problemas como dangling pointer, double free ou use after free(que pode causar um Segmentation fault).
+    ```c
+    typedef struct Car{int car_id}Car;
+
+    void function(List l){
+        Car* car = malloc(sizeof(Car)); <- ponteiro para estrutura
+        car->car_id = 101;
+        list_push(l, car);
+    }                                   <- seria deletado aqui(stack)
+
+    int main(){
+        List l = new_list(T);
+        function(l);
+        list_print(l);                  <- heap permanece válido
+    }
+        
+    ```
+
+## Exemplo
+Uma breve demonstração do funcionamento da lista:
+```c
+#include "Tlist.h"
+#include <stdlib.h>
+
+typedef struct Car{
+    int model;
+    int year;
+}Car;
+
+Car* new_car(int year, int model){
+    Car* carro = (Car*) malloc (sizeof(Car));
+    carro->year = year;
+    carro->model = model;
+    return car;
+}
+
+void print_car(void* car){
+    Car* c = (Car*) car;
+    printf("{model: %d, year: %d}", c->model, c->year);
+}
+void free_car(void* car){
+    Car* c = (Car*)car;
+    free(c);
+}
+void upgrade_car(void* car){
+    Car* c = (Car*)car;
+    c->year++;
+}
+
+int main(){
+    List list = new_list(T);
+
+    list_set_clearFunction(free_car);
+    list_set_toString(print_car);
+
+    Car* car1 = new_car(12, 1212);
+    Car* car2 = new_car(11, 1010);
+
+    list_push(list, car1);
+    list_push(list, car2);
+
+    list_foreach(list, upgrade_car);
+    list_print(list);
+    list_free(list);
+
+    return 0;
+}
+
+```
 ---
 <div align="center">
     <h1>Work in progress 🚧</h1>
