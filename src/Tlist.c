@@ -20,7 +20,10 @@
 
 List new_list(Type type){
     List this = (List)malloc(sizeof(struct List));
-    if(this == NULL) CATCH_STATUS(FATAL_ERROR, "Failed to allocate memory for the new list.");
+    if(this == NULL){
+        CATCH_STATUS(FATAL_ERROR, "Failed to allocate memory for the new list.");
+        return NULL;
+    }
     this->_head = NULL;
     this->_tail = NULL;
     this->_type = type;
@@ -40,16 +43,19 @@ List new_list(Type type){
 
 Node _new_node(void *val, size_t size, Type type){
     Node node = (Node)malloc(sizeof(struct Node));    
-    if(node == NULL) CATCH_STATUS(ERROR, "Failed to allocate memory for the new node.");
+    if(node == NULL) {
+        CATCH_STATUS(ERROR, "Failed to allocate memory for the new node.");
+        return NULL;
+    }
     if (type == STRING) {
         if (val == NULL) {
-            fprintf(stderr, "Error in _new_node(): Cannot create a STRING node from a NULL pointer.\n");
-            exit(EXIT_FAILURE);
+            CATCH_STATUS(ERROR, "Cannot create a STRING node from a NULL pointer.");
+            return NULL;
         }
         node->_val = malloc(strlen((char *)val) + 1);
         if (node->_val == NULL) {
-            fprintf(stderr, "Error in _new_node(): Failed to allocate memory for the node's string value.\n");
-            exit(EXIT_FAILURE);
+            CATCH_STATUS(ERROR, "Cannot create a STRING node from a NULL pointer.");
+            return NULL;
         }
         strcpy((char *)node->_val, (char *)val);
     }
@@ -59,8 +65,8 @@ Node _new_node(void *val, size_t size, Type type){
     else {
         node->_val = malloc(size);
         if (node->_val == NULL) {
-            fprintf(stderr, "Error in _new_node(): Failed to allocate memory for the node's value.\n");
-            exit(EXIT_FAILURE);
+            CATCH_STATUS(ERROR, "Failed to allocate memory for the node's value.");
+            return NULL;
         }
         memcpy(node->_val, val, size);
     }   
@@ -70,31 +76,31 @@ Node _new_node(void *val, size_t size, Type type){
 
 void list_dPrint(List this){
     if (this == NULL) {
-        fprintf(stderr, "Error in print(): The provided list instance is NULL.\n");
+        CATCH_STATUS(ERROR, "The provided list instance is NULL.");
         return;
     }
     printf("[");
     
-        for (Node current = this->_head; current != NULL; current = current->_nextNode){
-            switch (this->_type){
-                case INT: printf("%d", *(int *)current->_val); break;
-                case STRING: printf("\"%s\"", (char *)current->_val); break;
-                case DOUBLE: printf("%.2f", *(double *)current->_val); break;
-                case FLOAT: printf("%.2f", *(float *)current->_val); break;
-                case T: printf("%p", current->_val); break;
-            }
-            if (current->_nextNode != NULL){
-                printf(", ");
-            }
+    for (Node current = this->_head; current != NULL; current = current->_nextNode){
+        switch (this->_type){
+            case INT: printf("%d", *(int *)current->_val); break;
+            case STRING: printf("\"%s\"", (char *)current->_val); break;
+            case DOUBLE: printf("%.2f", *(double *)current->_val); break;
+            case FLOAT: printf("%.2f", *(float *)current->_val); break;
+            case T: printf("%p", current->_val); break;
         }
+        if (current->_nextNode != NULL){
+            printf(", ");
+        }
+    }
     
     printf("]");
     printf("\n");
 }
-
+    
 void list_free(List this){
     if (this == NULL) {
-        fprintf(stderr, "Error in destroyList(): The provided list instance is NULL.\n");
+        CATCH_STATUS(ERROR, "The provided list instance is NULL.");
         return;
     }
     Node current = this->_head;
@@ -106,7 +112,8 @@ void list_free(List this){
         }else if(this->_type != T){
             free(temp->_val);
         }else{
-            fprintf(stderr, "Warning in list_free(): No clear function provided for custom type. Skipping free operation.\n");
+            CATCH_STATUS(ERROR, "No clear function provided for custom type. Skipping free operation.");
+            return;
         }
         
         free(temp);
@@ -128,7 +135,11 @@ void _under_push(List this, Node node){
 }
 
 void list_push(List this, ...){
-    if (this == NULL) CATCH_STATUS(ERROR, "Error in push(): The provided list instance is NULL.");
+    if (this == NULL){
+        CATCH_STATUS(ERROR, "The provided list instance is NULL.");
+        return;
+    } 
+    
     va_list args;
     va_start(args, this);
     switch (this->_type){
@@ -163,7 +174,8 @@ void list_push(List this, ...){
 
 int list_length(List this){
     if (this == NULL) {
-        fprintf(stderr, "Error in len(): The provided list instance is NULL.\n");
+        CATCH_STATUS(ERROR, "The provided list instance is NULL.");
+        return 1;
     }
     return this->_length;
 }
@@ -197,8 +209,10 @@ void *_clone_value(Node node, Type type){
             break;
         }
         case T:{
-            fprintf(stderr, "Error: _clone_value should not be called for type T\n");
-            return NULL;
+            //TODO: avisar na dacumentação que o get para tipo T retorna um ponteiro para o valor real e não uma cópia(antigamente não dava para dar get em T)
+            //TODO: talvez implementar uma callback para cópia
+            CATCH_STATUS(WARNING, "The returned value is a pointer to the original element");
+            return node->_val;
         };
     }
     return NULL;
@@ -206,10 +220,11 @@ void *_clone_value(Node node, Type type){
 
 void *list_pop(List this){
     if (this == NULL) {
-        fprintf(stderr, "Error in pop(): The provided list instance is NULL.\n");
+        CATCH_STATUS(ERROR, "The provided list instance is NULL.");
         return NULL;
     }
     if (this->_head == NULL){
+        CATCH_STATUS(ERROR, "The provided list do not contain any value.");
         return NULL;
     }else {
         Node current = this->_head;
@@ -232,13 +247,14 @@ void *list_pop(List this){
 
 void *list_get(List this, int index){
     if (this == NULL) {
-        fprintf(stderr, "Error in get(): The provided list instance is NULL.\n");
+        CATCH_STATUS(ERROR, "The provided list instance is NULL.");
         return NULL;
     }
     if (index < 0) {
-        fprintf(stderr, "Error in get(): Index %d is negative and invalid.\n", index);
+        CATCH_STATUS(ERROR, "Index is invalid");
         return NULL;
     }
+
     int x = 0;
     Node current = this->_head;
     while (current != NULL){
@@ -248,20 +264,20 @@ void *list_get(List this, int index){
         current = current->_nextNode;
         x++;
     }
-    fprintf(stderr, "Error in get(): Index %d is out of bounds for list of size %d.\n", index, x);
+    CATCH_STATUS(ERROR, "Index is out of bounds for list");
     return NULL;
 }
 
 void list_set(List this, int index, ...){
     if (this == NULL) {
-        fprintf(stderr, "Error in set(): The provided list instance is NULL.\n");
+        CATCH_STATUS(ERROR, "The provided list instance is NULL.");
         return;
     }
     if (index < 0) {
-        fprintf(stderr, "Error in set(): Index %d is negative and invalid.\n", index);
+        CATCH_STATUS(ERROR, "Index is invalid.");
         return;
     }
-
+    
     va_list args;
     va_start(args, index);
     Node current = this->_head;
@@ -289,8 +305,8 @@ void list_set(List this, int index, ...){
                     free(current->_val);
                     current->_val = malloc(strlen(chr) + 1);
                     if (current->_val == NULL) {
-                        fprintf(stderr, "Error in set(): Failed to allocate memory for the new string value.\n");
-                        exit(EXIT_FAILURE);
+                        CATCH_STATUS(ERROR, "Failed to allocate memory for the new string value.");
+                        return;
                     }
                     strcpy((char *)current->_val, chr);
                     break;
@@ -307,17 +323,17 @@ void list_set(List this, int index, ...){
         current = current->_nextNode;
         x++;
     }
-    fprintf(stderr, "Error in set(): Index %d is out of bounds for list of size %d.\n", index, x);
+    CATCH_STATUS(ERROR, "Index is out of bounds for list of size.");
     va_end(args);
 }
 
 void list_delete(List this, int index){
     if (this == NULL) {
-        fprintf(stderr, "Error in delete(): The provided list instance is NULL.\n");
+        CATCH_STATUS(ERROR, "The provided list instance is NULL.");
         return;
     }
     if (index < 0) {
-        fprintf(stderr, "Error in delete(): Index %d is negative and invalid.\n", index);
+        CATCH_STATUS(ERROR, " Index is invalid.");
         return;
     }
 
@@ -348,7 +364,7 @@ void list_delete(List this, int index){
         current = current->_nextNode;
         x++;
     }
-    fprintf(stderr, "Error in delete(): Index %d is out of bounds for list of size %d.\n", index, x);
+    CATCH_STATUS(ERROR, "Index is out of bounds for list of size");
 }
 
 void _under_insert(List this, int index, Node node){
@@ -379,13 +395,13 @@ void _under_insert(List this, int index, Node node){
 
 void list_insert(List this, int index, ...){
     if (this == NULL) {
-        fprintf(stderr, "Error in insert(): The provided list instance is NULL.\n");
+        CATCH_STATUS(ERROR, "The provided list instance is NULL.");
         return;
     }
 
     int list_len = list_length(this);
     if (index < 0 || index > list_len) {
-        fprintf(stderr, "Error in insert(): Index %d is out of bounds. Valid range is 0 to %d.\n", index, list_len);
+        CATCH_STATUS(ERROR, "Index is out of bounds");
         return;
     }
 
@@ -425,11 +441,11 @@ void list_insert(List this, int index, ...){
 
 void *list_pick(List this, int index){
     if (this == NULL) {
-        fprintf(stderr, "Error in pick(): The provided list instance is NULL.\n");
+        CATCH_STATUS(ERROR, "The provided list instance is NULL");
         return NULL;
     }
     if (index < 0) {
-        fprintf(stderr, "Error in pick(): Index %d is negative and invalid.\n", index);
+        CATCH_STATUS(ERROR, "Index is invalid.");
         return NULL;
     }
 
@@ -462,12 +478,13 @@ void *list_pick(List this, int index){
     }
 
     fprintf(stderr, "Error in pick(): Index %d is out of bounds for list of size %d.\n", index, x);
+    CATCH_STATUS(ERROR, "Index is out of bounds for list of size.");
     return NULL;
 }
 
 void list_foreach(List this, void(*function)(void*)){
     if (this == NULL) {
-        fprintf(stderr, "Error in foreach(): The provided list instance is NULL.\n");
+        CATCH_STATUS(ERROR, "The provided list instance is NULL.");
         return;
     }
     for(Node current = this->_head; current != NULL; current = current->_nextNode){
@@ -477,7 +494,7 @@ void list_foreach(List this, void(*function)(void*)){
 
 List list_duplicate(const List this){
     if (this == NULL) {
-        fprintf(stderr, "Error in duplicate(): The provided list instance is NULL.\n");
+        CATCH_STATUS(ERROR, "The provided list instance is NULL.");
         return NULL;
     }
     List list = new_list(this->_type);
@@ -485,7 +502,7 @@ List list_duplicate(const List this){
     
     if(this->to_string != NULL) list->to_string = this->to_string;
     if(this->clear_function != NULL) list->clear_function = this->clear_function;
-
+    
     while(iterator_has_next(iterator)){
         void* val = iterator_next(iterator);
         switch (this->_type){
@@ -502,11 +519,19 @@ List list_duplicate(const List this){
 }
 
 void list_set_toString(List list, char*(*function)(void*)){
+    if (list == NULL) {
+        CATCH_STATUS(ERROR, "The provided list instance is NULL.");
+        return;
+    }
     list->to_string = function;
     return;
 }       
 
 void list_set_clearFunction(List list, void(*function)(void*)){
+    if (list == NULL) {
+        CATCH_STATUS(ERROR, "The provided list instance is NULL.");
+        return;
+    }
     list->clear_function = function;
     return;
 }
@@ -541,11 +566,23 @@ char* _append_format(Type type, void* val){
 }
 
 size_t _string_list_size(List list){
+    if (list == NULL) {
+        CATCH_STATUS(ERROR, "The provided list instance is NULL.");
+        return 0;
+    }
     size_t size = 0;
     for(Node current = list->_head; current != NULL; current = current->_nextNode){
         switch(list->_type){
             case INT:{
                 size += snprintf(NULL, 0, "%d", *(int*)current->_val);
+                break;
+            }
+            case DOUBLE:{
+                size += snprintf(NULL, 0, "%f", *(double*)current->_val);
+                break;
+            }
+            case FLOAT:{
+                size += snprintf(NULL, 0, "%f", *(float*)current->_val);
                 break;
             }
             case STRING:{
@@ -565,6 +602,11 @@ size_t _string_list_size(List list){
 }
 
 char* _string_list_concat(List list){
+    if (list == NULL) {
+        CATCH_STATUS(ERROR, "The provided list instance is NULL.");
+        return NULL;
+    }
+    
     if(!list){
         CATCH_STATUS(ERROR, "The provided list instance is NULL.\n");
         return NULL;
@@ -574,14 +616,22 @@ char* _string_list_concat(List list){
         CATCH_STATUS(ERROR, "Fail to memory allocate for string");
         return NULL;
     }
-
+    
     char* ptr = str;
     *ptr++ = '[';
-
+    
     for(Node current = list->_head; current != NULL; current = current->_nextNode){
         switch(list->_type){
             case INT:{
                 ptr += sprintf(ptr, "%d", *(int*)current->_val);                
+                break;
+            }
+            case DOUBLE:{
+                ptr += sprintf(ptr, "%f", *(double*)current->_val);                
+                break;
+            }
+            case FLOAT:{
+                ptr += sprintf(ptr, "%f", *(float*)current->_val);                
                 break;
             }
             case STRING:{
@@ -602,7 +652,13 @@ char* _string_list_concat(List list){
     return str;
 }
 
+
 List _string_list_converter(List list){
+    if (list == NULL) {
+        CATCH_STATUS(ERROR, "The provided list instance is NULL.");
+        return NULL;
+    }
+
     List l = new_list(STRING);
     for(Node current = list->_head; current != NULL; current = current->_nextNode){
         list_push(l, list->to_string(current->_val));
@@ -611,6 +667,11 @@ List _string_list_converter(List list){
 }
 
 char* list_toString(List list){
+    if (list == NULL) {
+        CATCH_STATUS(ERROR, "The provided list instance is NULL.");
+        return NULL;
+    }
+
     if (list->to_string) {
         return _string_list_concat(_string_list_converter(list));
     }
@@ -618,8 +679,12 @@ char* list_toString(List list){
 }
 
 void list_print(List list){
+    if (list == NULL) {
+        CATCH_STATUS(ERROR, "The provided list instance is NULL.");
+        return;
+    }
     char* str = list_toString(list);
-    fprintf(stdout, "%s", str);
+    fprintf(stdout, "%s\n", str);
     free(str);
     return;
 }
