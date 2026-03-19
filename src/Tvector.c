@@ -1,5 +1,5 @@
+#include "../include/tlist/_Tlist.h"
 #include "../include/tlist/Tlist.h"
-#include "../include/tlist/TlistPrivate.h"
 
 ArrayList new_array(Type type, int capacity){
     ArrayList list = (ArrayList)malloc(sizeof(struct ArrayList));

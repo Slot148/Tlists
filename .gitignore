@@ -13,3 +13,4 @@ CMakeLists(teste).txt
 LICENSE
 .*/*
 makefile
+.gdbinit

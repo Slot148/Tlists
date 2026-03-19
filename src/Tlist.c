@@ -68,33 +68,26 @@ Node _new_node(void *val, size_t size, Type type){
     return node;
 }
 
-void list_print(List this){
+void list_dPrint(List this){
     if (this == NULL) {
         fprintf(stderr, "Error in print(): The provided list instance is NULL.\n");
         return;
     }
     printf("[");
-        if(this->to_string == NULL){
-            for (Node current = this->_head; current != NULL; current = current->_nextNode){
-                switch (this->_type){
-                    case INT: printf("%d", *(int *)current->_val); break;
-                    case STRING: printf("\"%s\"", (char *)current->_val); break;
-                    case DOUBLE: printf("%.2f", *(double *)current->_val); break;
-                    case FLOAT: printf("%.2f", *(float *)current->_val); break;
-                    case T: printf("%p", current->_val); break;
-                }
-                if (current->_nextNode != NULL){
-                    printf(", ");
-                }
+    
+        for (Node current = this->_head; current != NULL; current = current->_nextNode){
+            switch (this->_type){
+                case INT: printf("%d", *(int *)current->_val); break;
+                case STRING: printf("\"%s\"", (char *)current->_val); break;
+                case DOUBLE: printf("%.2f", *(double *)current->_val); break;
+                case FLOAT: printf("%.2f", *(float *)current->_val); break;
+                case T: printf("%p", current->_val); break;
             }
-        }else{
-            for (Node current = this->_head; current != NULL; current = current->_nextNode){
-                this->to_string(current->_val);    
-                if (current->_nextNode != NULL){
-                    printf(", ");
-                }
+            if (current->_nextNode != NULL){
+                printf(", ");
             }
         }
+    
     printf("]");
     printf("\n");
 }
@@ -508,7 +501,7 @@ List list_duplicate(const List this){
     return list;
 }
 
-void list_set_toString(List list, void(*function)(void*)){
+void list_set_toString(List list, char*(*function)(void*)){
     list->to_string = function;
     return;
 }       
@@ -547,7 +540,7 @@ char* _append_format(Type type, void* val){
     return buffer;
 }
 
-size_t _data_list_size(List list){
+size_t _string_list_size(List list){
     size_t size = 0;
     for(Node current = list->_head; current != NULL; current = current->_nextNode){
         switch(list->_type){
@@ -571,14 +564,14 @@ size_t _data_list_size(List list){
     return size;
 }
 
-char* list_getString(List list){
+char* _string_list_concat(List list){
     if(!list){
         CATCH_STATUS(ERROR, "The provided list instance is NULL.\n");
         return NULL;
     }
-    char* str = malloc(_data_list_size(list));
+    char* str = malloc(_string_list_size(list));
     if(!str){
-        CATCH_STATUS(ERROR, "Fail in memory allocate");
+        CATCH_STATUS(ERROR, "Fail to memory allocate for string");
         return NULL;
     }
 
@@ -607,4 +600,26 @@ char* list_getString(List list){
     *ptr++ = ']';
     *ptr = '\0';
     return str;
+}
+
+List _string_list_converter(List list){
+    List l = new_list(STRING);
+    for(Node current = list->_head; current != NULL; current = current->_nextNode){
+        list_push(l, list->to_string(current->_val));
+    }
+    return l;
+}
+
+char* list_toString(List list){
+    if (list->to_string) {
+        return _string_list_concat(_string_list_converter(list));
+    }
+    return _string_list_concat(list);
+}
+
+void list_print(List list){
+    char* str = list_toString(list);
+    fprintf(stdout, "%s", str);
+    free(str);
+    return;
 }

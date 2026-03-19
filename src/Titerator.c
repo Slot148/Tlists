@@ -1,4 +1,4 @@
-#include "../include/tlist/TlistPrivate.h"
+#include "../include/tlist/_Tlist.h"
 #include "../include/tlist/Tlist.h"
 
 TIterator new_iterator(const List list){
@@ -28,7 +28,7 @@ void* iterator_next(TIterator iterator){
     return val;
 }
 
-bool iterator_has_next(TIterator iterator){
+int iterator_has_next(TIterator iterator){
     if (iterator == NULL) {
         return false;
     }

@@ -1,6 +1,5 @@
-#include "../include/tlist/TlistPrivate.h"
+#include "../include/tlist/_Tlist.h"
 #include "../include/tlist/Tlist.h"
-#include <stddef.h>
 
 Tree new_tree(Type type){
     Tree tree = malloc(sizeof(struct Tree));
@@ -11,7 +10,7 @@ Tree new_tree(Type type){
     tree->_root = NULL;
     tree->to_string = NULL;
     tree->clear_function = NULL;
-    tree->condition = NULL;
+    tree->condition_function = NULL;
 
     switch(type){
         case INT: tree->_size = sizeof(int); break;
@@ -69,12 +68,12 @@ void _under_tpush(Tree tree, TNode new_node){
         tree->_root = new_node;
         return;
     }
-    _add_newNode(tree->_root, new_node, tree->condition);
+    _add_newNode(tree->_root, new_node, tree->condition_function);
 }
 
 void tree_push(Tree tree, ...){
     if(tree == NULL)CATCH_STATUS(ERROR, "The provided tree instance is NULL.");
-    if(tree->condition == NULL)CATCH_STATUS(ERROR, "THe condition function is not provided.");
+    if(tree->condition_function == NULL)CATCH_STATUS(ERROR, "THe condition function is not provided.");
     
     size_t size = tree->_size;
 
@@ -89,17 +88,17 @@ void tree_push(Tree tree, ...){
         }
         case FLOAT:{
             int val = (float)va_arg(args, double);
-            _under_tpush(tree, _new_tnode(&val, INT, size));
+            _under_tpush(tree, _new_tnode(&val, FLOAT, size));
             break;
         }
         case DOUBLE:{
             double val = va_arg(args, double);
-            _under_tpush(tree, _new_tnode(&val, INT, size));
+            _under_tpush(tree, _new_tnode(&val, DOUBLE, size));
             break;
         }
         case STRING:{
             char* val = va_arg(args, char*);
-            _under_tpush(tree, _new_tnode(val, T, size));
+            _under_tpush(tree, _new_tnode(val, STRING, size));
             break;
         }
         default:{
@@ -111,18 +110,14 @@ void tree_push(Tree tree, ...){
     va_end(args);
 }
 
-void set_checkCondition(Tree tree, Condition condition){
-    tree->condition = condition;
+void tree_set_checkCondition(Tree tree, Condition condition){
+    tree->condition_function = condition;
 }
 
 void tree_set_toString(Tree tree, Callback to_string){
     tree->to_string = to_string;
 }
 
-void tree_set_cleanFunction(Tree tree ,Callback clear_function){
+void tree_set_cleanFunction(Tree tree , Callback clear_function){
     tree->clear_function = clear_function;
 }
-
-// void tree_foreach(Tree tree, Callback function){
-//     return;
-// }
