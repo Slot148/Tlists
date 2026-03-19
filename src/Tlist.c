@@ -519,57 +519,92 @@ void list_set_clearFunction(List list, void(*function)(void*)){
 }
 
 char* _append_format(Type type, void* val){
-    char* buffer_copy = NULL;
+    char* buffer = NULL;
     switch(type){
         case INT:{
-            char* buffer = malloc(12);
-            sprintf(buffer, "%d", *(int*)val);
-            buffer_copy = malloc(strlen(buffer) + 1);
-            return strcpy(buffer_copy, buffer);
+            int len = snprintf(NULL, 0, "%d", *(int*)val) + 1;
+            buffer = malloc(len);
+            if(buffer)sprintf(buffer, "%d", *(int*)val);
+            break;
         }
         case STRING:{
-            char* buffer = malloc(strlen(val) + 1);
-            sprintf(buffer, "%s", (char*)val);
-            buffer_copy = malloc(strlen(buffer));
-            return strcpy(buffer_copy, buffer);
+            buffer = malloc(strlen(val) + 1);
+            strcpy(buffer, (char*)val);
+            break;
         }
         case T:{
-            char* buffer = malloc(32);
-            sprintf(buffer, "%p", val);
+            int len = snprintf(NULL, 0, "%p", val) + 1;
+            buffer = malloc(len);
+            if(buffer)sprintf(buffer, "%p", val);
+            break;
+        }
+        default:{
+            buffer = malloc(1);
+            if (buffer) buffer[0] = '\0';
             break;
         }
     }
-    return "";
+    return buffer;
 }
 
-
-char* list_getString(List list){
-    if(!list)CATCH_STATUS(ERROR, "The provided list instance is NULL.\n");
-    char* str = NULL;
+size_t _data_list_size(List list){
+    size_t size = 0;
     for(Node current = list->_head; current != NULL; current = current->_nextNode){
-        char* current_value = _append_format(list->_type, current->_val);
-
-        size_t len;
-        if (!str) {
-            len = strlen(current_value) + strlen("[") + 1;
-            str = malloc(len);
-        }else {
-            len = strlen(str) + strlen(current_value) + 1;
-            str = realloc(str, len);
+        switch(list->_type){
+            case INT:{
+                size += snprintf(NULL, 0, "%d", *(int*)current->_val);
+                break;
+            }
+            case STRING:{
+                size += strlen((char*)current->_val);
+                break;
+            }
+            case T:{
+                size += snprintf(NULL, 0, "%p", current->_val);
+                break;
+            }
         }
-        if(strlen(str) == 0)strcat(str, "[");
-        strcat(str, current_value);
-        
         if(current->_nextNode){
-            str = realloc(str, len + strlen(", ") + 1);
-            strcat(str, ", ");
+            size += 2;
         }
     }
+    return size;
+}
 
-    str = realloc(str, strlen("]") + 1);
-    strcat(str, "]");
+char* list_getString(List list){
+    if(!list){
+        CATCH_STATUS(ERROR, "The provided list instance is NULL.\n");
+        return NULL;
+    }
+    char* str = malloc(_data_list_size(list));
+    if(!str){
+        CATCH_STATUS(ERROR, "Fail in memory allocate");
+        return NULL;
+    }
 
-    size_t size = strlen(str)+1;
-    char* str_copy = malloc(size);
-    return strncpy(str_copy, str, size);
+    char* ptr = str;
+    *ptr++ = '[';
+
+    for(Node current = list->_head; current != NULL; current = current->_nextNode){
+        switch(list->_type){
+            case INT:{
+                ptr += sprintf(ptr, "%d", *(int*)current->_val);                
+                break;
+            }
+            case STRING:{
+                ptr += sprintf(ptr, "%s", (char*)current->_val);                
+                break;
+            }
+            case T:{
+                ptr += sprintf(ptr, "%p", current->_val);                
+                break;
+            }
+        }
+        if(current->_nextNode){
+            ptr += sprintf(ptr, "%s", ", ");
+        }
+    }
+    *ptr++ = ']';
+    *ptr = '\0';
+    return str;
 }
