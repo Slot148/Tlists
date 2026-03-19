@@ -1,5 +1,22 @@
-#include "../include/tlist/TlistPrivate.h"
-#include "../include/tlist/Tlist.h"
+#include "Tlist.h"
+#include "../include/tlist/_Tlist.h"
+#include <stddef.h>
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+
+// typedef struct _PointerCollection{
+//     void** _pointers;
+//     int _pointers_num;
+// }_PointerCollection;
+
+// static _PointerCollection *_collection;
+
+// void _init_pointers_collection(void){
+//     _collection = malloc(sizeof(struct _PointerCollection));
+//     _collection->_pointers = malloc(sizeof(void*) * 40);
+//     _collection->_pointers_num = 0;
+// }
 
 List new_list(Type type){
     List this = (List)malloc(sizeof(struct List));
@@ -180,6 +197,7 @@ void *_clone_value(Node node, Type type){
             break;
         }
         case STRING:{
+            //TODO: verificar se o valor esta sendo copiado corretamente
             void *val = malloc(strlen((char *)current->_val) + 1);
             strcpy((char *)val, (char *)current->_val);
             return val;
@@ -478,6 +496,7 @@ List list_duplicate(const List this){
     while(iterator_has_next(iterator)){
         void* val = iterator_next(iterator);
         switch (this->_type){
+            //TODO: revisar se isso não esta copiando o ponteiro inves do valor
             case INT: list_push(list, *(int *)val); break;
             case FLOAT: list_push(list, *(float *)val); break;
             case DOUBLE: list_push(list, *(double *)val); break;
@@ -497,4 +516,60 @@ void list_set_toString(List list, void(*function)(void*)){
 void list_set_clearFunction(List list, void(*function)(void*)){
     list->clear_function = function;
     return;
+}
+
+char* _append_format(Type type, void* val){
+    char* buffer_copy = NULL;
+    switch(type){
+        case INT:{
+            char* buffer = malloc(12);
+            sprintf(buffer, "%d", *(int*)val);
+            buffer_copy = malloc(strlen(buffer) + 1);
+            return strcpy(buffer_copy, buffer);
+        }
+        case STRING:{
+            char* buffer = malloc(strlen(val) + 1);
+            sprintf(buffer, "%s", (char*)val);
+            buffer_copy = malloc(strlen(buffer));
+            return strcpy(buffer_copy, buffer);
+        }
+        case T:{
+            char* buffer = malloc(32);
+            sprintf(buffer, "%p", val);
+            break;
+        }
+    }
+    return "";
+}
+
+
+char* list_getString(List list){
+    if(!list)CATCH_STATUS(ERROR, "The provided list instance is NULL.\n");
+    char* str = NULL;
+    for(Node current = list->_head; current != NULL; current = current->_nextNode){
+        char* current_value = _append_format(list->_type, current->_val);
+
+        size_t len;
+        if (!str) {
+            len = strlen(current_value) + strlen("[") + 1;
+            str = malloc(len);
+        }else {
+            len = strlen(str) + strlen(current_value) + 1;
+            str = realloc(str, len);
+        }
+        if(strlen(str) == 0)strcat(str, "[");
+        strcat(str, current_value);
+        
+        if(current->_nextNode){
+            str = realloc(str, len + strlen(", ") + 1);
+            strcat(str, ", ");
+        }
+    }
+
+    str = realloc(str, strlen("]") + 1);
+    strcat(str, "]");
+
+    size_t size = strlen(str)+1;
+    char* str_copy = malloc(size);
+    return strncpy(str_copy, str, size);
 }
